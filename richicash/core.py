@@ -11,6 +11,13 @@ import sys
 from enum import Enum
 from pathlib import Path
 
+from .defaults import Defaults
+from .transactional_accounts import TransactionalAccounts
+
+
+defaults = Defaults()
+transactional_accounts = TransactionalAccounts(defaults)
+
 
 class Origin(Enum):
     ACCOUNT = 1
@@ -19,6 +26,7 @@ class Origin(Enum):
 
 logger = None
 type_operation = Origin.ACCOUNT
+defaults = None
 
 
 def arg_parser(
@@ -74,22 +82,41 @@ def parse_date(
         original_date):
     """Parse a date coming from my bank to a supported one by gnucash"""
 
-    aux_datetime = datetime.datetime.strptime(original_date, "%Y/%m/%d")
+    aux_datetime = datetime.datetime.strptime(original_date, "%d/%m/%Y")
     return aux_datetime.strftime("%d-%m-%Y")
 
 
 def account_csv_to_gnucash_csv(
         tmp_csv_file,
         csv_file):
-    """Converts a generated CSV by 'sscovert' to a supported by gnucash."""
+    """
+    Converts a generated CSV by 'sscovert' to a supported by gnucash.
+
+    Format of the generated CSV:
+    - Date
+    - Description
+    - Annotations
+    - Deposit
+    """
+    global transactional_accounts
+
     with open(csv_file, 'w') as csv_file_descriptor:
         csv_writer = csv.writer(csv_file_descriptor)
         with open(tmp_csv_file) as tmp_csv_file_descriptor:
             csv_reader = csv.reader(tmp_csv_file_descriptor)
 
             for row in csv_reader:
-                date = parse_date(row[0])
-                csv_writer.writerow([date, row[1], row[2], row[3], row[4]])
+                if row[4] != "":
+                    date = parse_date(row[4])
+                    incoming = row[6]
+                    if incoming == "":
+                        incoming = "-" + row[7]
+                    card_ref = str.strip(row[13])
+                    description =  str.strip(row[14])
+                    csv_writer.writerow([date, description, str.strip(row[15] + " " + row[16] + " " + row[17] + " " +
+                        row[18] + " " + row[19] + " " + row[20] + " " + row[21] + " " + row[22] + " " + row[23]),
+                        incoming,
+                        transactional_accounts.deduce(description, card_ref)])
         return
 
 
