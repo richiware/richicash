@@ -32,8 +32,6 @@ class TransactionalAccounts:
         """ Return the name of the transactional account for a description."""
         account_name = "Descuadre-EUR"
 
-        print("c = " + descr)
-
         if descr == 'REINT.CAJERO' or descr == 'CAJERO SERVIRED':
             try:
                 account_name = self.cards[ref]["extract_money_to"]
@@ -45,5 +43,11 @@ class TransactionalAccounts:
             except Exception:
                 pass
 
-        print("S = " + account_name)
         return account_name
+
+
+    def get_card_account(
+            self,
+            ref: str):
+        """ Return the account for a specific card. """
+        return self.cards[ref]["account"]
