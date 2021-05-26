@@ -34,7 +34,7 @@ class TransactionalAccounts:
 
         print("c = " + descr)
 
-        if descr == "REINT.CAJERO":
+        if descr == 'REINT.CAJERO' or descr == 'CAJERO SERVIRED':
             try:
                 account_name = self.cards[ref]["extract_money_to"]
             except Exception:
