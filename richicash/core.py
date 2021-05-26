@@ -106,6 +106,7 @@ def account_csv_to_gnucash_csv(
     - Description
     - Annotations
     - Deposit
+    - Transactional account
     """
     global transactional_accounts
 
@@ -137,7 +138,8 @@ def card_csv_to_gnucash_csv(
     Format of the generated CSV:
     - Date
     - Description
-    - Deposit
+    - Reduction
+    - Transactional account
     - Card account
     """
     global transactional_accounts
