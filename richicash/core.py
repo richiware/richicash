@@ -172,8 +172,10 @@ def xls_convert_to_csv(
     tmp_csv_file = '/tmp/{}.csv'.format(Path(xls_file).stem)
     csv_file = '{}.csv'.format(Path(xls_file).stem)
     pid = os.getpid()
-    command = 'ssconvert "{}" /tmp/movimientos_{}.tmp.csv && tail -n +4 /tmp/movimientos_{}.tmp.csv &> "{}"'.format(
-            xls_file, pid, pid, tmp_csv_file)
+    command = 'ssconvert "{}" '.format(xls_file)
+    if Origin.ACCOUNT == type_operation:
+        command += '/tmp/movimientos_{}.tmp.csv && tail -n +4 /tmp/movimientos_{}.tmp.csv &> '.format(pid, pid)
+    command += '"{}"'.format(tmp_csv_file)
     logger.debug("Running command '{}'".format(command))
     execution = subprocess.run(command, shell=True)
 
