@@ -79,7 +79,7 @@ def arg_parser(
 
 
 def remove_strange_chars(
-        text):
+        text: str):
     return str.replace(text, '\xa0', ' ').strip()
 
 
@@ -93,6 +93,14 @@ def parse_date(
         aux_datetime = datetime.datetime.strptime(original_date, "%Y/%m/%d")
 
     return aux_datetime.strftime("%d-%m-%Y")
+
+
+def calculate_sign(
+        incoming: str):
+    if incoming.endswith('-'):
+        return '-' + incoming.replace('-', '')
+
+    return incoming
 
 
 def account_csv_to_gnucash_csv(
@@ -152,7 +160,7 @@ def card_csv_to_gnucash_csv(
             for row in csv_reader:
                 if row[0] != "":
                     date = parse_date(remove_strange_chars(row[0]))
-                    incoming = remove_strange_chars(row[3]).replace('EUR', '').strip()
+                    incoming = calculate_sign(remove_strange_chars(row[3]).replace('EUR', '').strip())
                     card_ref = remove_strange_chars(row[1]).replace(' ', '')
                     description = remove_strange_chars(row[2])
                     csv_writer.writerow([date, description,
