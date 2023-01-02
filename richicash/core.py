@@ -78,11 +78,6 @@ def arg_parser(
     return verb.file[0]
 
 
-def remove_strange_chars(
-        text: str):
-    return str.replace(text, '\xa0', ' ').strip()
-
-
 def parse_date(
         original_date):
     """Parse a date coming from my bank to a supported one by gnucash"""
@@ -93,14 +88,6 @@ def parse_date(
         aux_datetime = datetime.datetime.strptime(original_date, "%Y/%m/%d")
 
     return aux_datetime.strftime("%d-%m-%Y")
-
-
-def calculate_sign(
-        incoming: str):
-    if incoming.endswith('-'):
-        return '-' + incoming.replace('-', '')
-
-    return incoming
 
 
 def account_csv_to_gnucash_csv(
@@ -115,6 +102,7 @@ def account_csv_to_gnucash_csv(
     - Annotations
     - Deposit
     - Transactional account
+    - Account
     """
     global transactional_accounts
 
@@ -123,19 +111,27 @@ def account_csv_to_gnucash_csv(
         with open(tmp_csv_file) as tmp_csv_file_descriptor:
             csv_reader = csv.reader(tmp_csv_file_descriptor)
 
+            start_processing = False
             for row in csv_reader:
+                if not start_processing:
+                    if row[1] == u'Número de cuenta':
+                        start_processing = True
+                    continue
                 if row[4] != "":
                     date = parse_date(row[4])
                     incoming = row[6]
                     if incoming == "":
                         incoming = "-" + row[7]
+                    account_ref = str.strip(row[1])
                     card_ref = str.strip(row[13])
-                    description =  str.strip(row[14])
+                    description = str.strip(row[14])
                     csv_writer.writerow([date, description, str.strip(row[15] + " " + row[16] + " " + row[17] + " " +
                         row[18] + " " + row[19] + " " + row[20] + " " + row[21] + " " + row[22] + " " + row[23]),
                         incoming,
-                        transactional_accounts.deduce(description, card_ref)])
+                        transactional_accounts.deduce(description, card_ref),
+                        transactional_accounts.get_card_account(account_ref)])
         return
+
 
 def card_csv_to_gnucash_csv(
         tmp_csv_file,
@@ -146,9 +142,10 @@ def card_csv_to_gnucash_csv(
     Format of the generated CSV:
     - Date
     - Description
+    - Annotations
     - Reduction
     - Transactional account
-    - Card account
+    - Account
     """
     global transactional_accounts
 
@@ -157,13 +154,25 @@ def card_csv_to_gnucash_csv(
         with open(tmp_csv_file) as tmp_csv_file_descriptor:
             csv_reader = csv.reader(tmp_csv_file_descriptor)
 
+            start_processing = 0
             for row in csv_reader:
+                if 2 > start_processing:
+                    if 1 == start_processing:
+                        start_processing += 1
+                    else:
+                        if row[0] == u'Relación de operaciones':
+                            start_processing = 1
+                    continue
+
                 if row[0] != "":
-                    date = parse_date(remove_strange_chars(row[0]))
-                    incoming = calculate_sign(remove_strange_chars(row[3]).replace('EUR', '').strip())
-                    card_ref = remove_strange_chars(row[1]).replace(' ', '')
-                    description = remove_strange_chars(row[2])
+                    date = parse_date(row[3].strip())
+                    incoming = row[12].strip()
+                    card_ref = row[2].strip()
+                    description = row[5].strip()
                     csv_writer.writerow([date, description,
+                        row[15].strip() + " " + row[6].strip() + " " +
+                        row[7].strip() + " " + row[8].strip() + " " +
+                        row[9].strip(),
                         incoming,
                         transactional_accounts.deduce(description, card_ref),
                         transactional_accounts.get_card_account(card_ref)])
@@ -181,8 +190,6 @@ def xls_convert_to_csv(
     csv_file = '{}.csv'.format(Path(xls_file).stem)
     pid = os.getpid()
     command = 'ssconvert "{}" '.format(xls_file)
-    if Origin.ACCOUNT == type_operation:
-        command += '/tmp/movimientos_{}.tmp.csv && tail -n +4 /tmp/movimientos_{}.tmp.csv &> '.format(pid, pid)
     command += '"{}"'.format(tmp_csv_file)
     logger.debug("Running command '{}'".format(command))
     execution = subprocess.run(command, shell=True)
