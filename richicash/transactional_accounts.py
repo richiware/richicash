@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import yaml
 
 from .defaults import Defaults
@@ -36,12 +37,30 @@ class TransactionalAccounts:
             try:
                 account_name = self.cards[ref]["extract_money_to"]
             except Exception:
-                print("Error getting card info for " + ref)
+                pass
+
+            if "Descuadre-EUR" == account_name and "********" in ref:
+                try:
+                    match = [value for key, value
+                             in self.cards.items()
+                             if key[:4] == ref[:4] and key[-4] == ref[-4]]
+                    account_name = match[0]["extract_money_to"]
+                except Exception:
+                    print("Error getting card info for " + ref)
         else:
             try:
                 account_name = self.transactional_accounts[descr]
             except Exception:
                 pass
+
+            if "Descuadre-EUR" == account_name:
+                try:
+                    match = [value for key, value
+                             in self.transactional_accounts.items()
+                             if key in descr]
+                    account_name = match[0]
+                except Exception:
+                    pass
 
         return account_name
 
